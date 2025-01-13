@@ -1,0 +1,10 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_DB=jwt_db
+      - POSTGRES_USER=posrgre
+      - POSTGRES_PASSWORD=1201
+    ports:
+      - 5432:5432
+      

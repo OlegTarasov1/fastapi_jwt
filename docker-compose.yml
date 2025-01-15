@@ -9,7 +9,7 @@ services:
     ports:
       - 8000:8000
     command: >
-      sh -c "alembic upgrade head && python main.py"
+      sh -c "alembic upgrade head && python3 main.py"
 
   postgres_db:
     image: postgres

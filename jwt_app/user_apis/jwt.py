@@ -17,10 +17,11 @@ async def create_access_token(username: str, is_admin: bool, id: int, expire_del
     )
 
 
-async def decoding_jwt(token):
+# checks weather the jwt token is valid
+async def decoding_jwt(token: str = Header('authorization')):
     try:
         payload = jwt.decode(
-            token,
+            token[7:],
             os.getenv('SECRET_KEY'),
             os.getenv('ALGORITHM')
         )
@@ -35,8 +36,10 @@ async def decoding_jwt(token):
         raise HTTPException(status_code=401, detail = 'invalid user')
 
 
-async def get_token(authorization: str = Header(...)):
-    print(authorization)
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=400, detail="Invalid authorization format")
-    return authorization[6:] 
+
+async def is_creator(id: int, token: str = Header('authorization')):
+    token_dict = await decoding_jwt(token)
+    if id == token_dict.get('id') or token_dict.get('role'):
+        return token_dict
+    else:
+        raise HTTPException(status_code=401)

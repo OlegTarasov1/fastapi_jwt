@@ -1,6 +1,6 @@
 from bd.base import async_session
 from bd.reader_models import Reader
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 import bcrypt
 
 
@@ -10,10 +10,20 @@ class AsyncRequests:
     async def add_user(user):
         async with async_session() as session:
             salt = bcrypt.gensalt()
-            hashed_password = bcrypt.hashpw(user.password.encode(), salt)
-            new_reader = Reader(username = user.username, password = hashed_password, is_admin = False)
+            hashed_password = bcrypt.hashpw(user['password'].encode(), salt)
+            new_reader = Reader(username = user['username'], password = hashed_password, is_admin = False)
             session.add(new_reader)
             await session.commit()
+            
+            stmt = select(Reader).where(Reader.username == user['username'])
+            resp = await session.execute(stmt)
+            resp = resp.scalars().all()[-1]
+            obj = {
+                'id': resp.id,
+                'username': resp.username,
+                'is_admin': resp.is_admin
+            }
+            return obj
 
 
     @staticmethod
@@ -48,3 +58,15 @@ class AsyncRequests:
                     return False
             else:
                 return False
+            
+    
+    @staticmethod
+    async def patch_user(id: int, new_user: dict):
+        async with async_session() as session:
+            stmt = update(Reader).where(Reader.id == id).values(**new_user)
+            await session.execute(stmt)
+            await session.commit()
+            return {
+                'id': id,
+                **new_user
+            }

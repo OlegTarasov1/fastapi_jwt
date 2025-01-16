@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, status
 from user_apis.jwt import create_access_token, decoding_jwt, is_creator
 from pydantic import BaseModel
 from .requests import AsyncRequests
@@ -16,13 +16,13 @@ class User(BaseModel):
     password: str
 
 
-@user_api_router.post('/api/v1/add_user/', tags=['users'])
+@user_api_router.post('/api/v1/add_user/', tags=['users'], status_code=status.HTTP_201_CREATED)
 async def add_user(reader: User):
     try:
         resp = await AsyncRequests.add_user(reader.dict())
         return resp
     except:
-        raise HTTPException(status_code=400)
+        raise HTTPException(status_code=422)
     
 
 @user_api_router.get('/api/v1/get_user/{id}/', tags=['users'])
@@ -41,7 +41,7 @@ async def del_user(id: int, token: dict = Depends(is_creator)):
     if is_deleted:
         return {'status': 'success'}
     else:
-        raise HTTPException(status_code = 400)
+        raise HTTPException(status_code = 403)
     
 
 @user_api_router.post('/api/v1/login/', tags = ['users'])
@@ -59,8 +59,8 @@ class UserPatch(BaseModel):
 
 @user_api_router.patch('/api/v1/patch_user/{id}/', tags = ['users'])
 async def patch_user(id: int, new_user: UserPatch, token: dict = Depends(is_creator)):
-    # try:
-    obj = await AsyncRequests.patch_user(id, new_user.dict())
-    return obj
-    # except:
-    #     raise HTTPException(status_code=400)
+    try:
+        obj = await AsyncRequests.patch_user(id, new_user.dict())
+        return obj
+    except:
+        raise HTTPException(status_code=403)

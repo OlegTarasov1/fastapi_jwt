@@ -1,6 +1,6 @@
 FROM python
 
-WORKDIR /app
+WORKDIR /jwt_app
 
 COPY requirements.txt .
 

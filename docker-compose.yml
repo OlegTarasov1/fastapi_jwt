@@ -5,7 +5,9 @@ services:
       postgres_db:
         condition: service_healthy
     volumes:
-      - ./jwt_app:/app
+      - ./jwt_app:/jwt_app
+      - ./tests:/tests
+      - ./pytest.ini:/pytest.ini
     ports:
       - 8000:8000
     command: >

@@ -16,7 +16,7 @@ class Books(Base):
     description: Mapped[str] = mapped_column(String(1000))
     date: Mapped[datetime.date] = mapped_column(default = datetime.date.today())
     authors: Mapped[list['Authors']] = relationship(secondary = 'auth_books_table', back_populates = 'books')
-    # genres
+    genres: Mapped[list[str]] = mapped_column(ARRAY(String))
     in_store: Mapped[int] = mapped_column(default = 0)
 
 

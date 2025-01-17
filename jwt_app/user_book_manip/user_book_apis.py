@@ -10,3 +10,7 @@ async def add_book_to_user(id: int, book_id: int, token: dict = Depends(is_creat
     return resp
 
 
+@user_book_router.post('/api/v1/return_book/{id}/{book_id}', tags = ['user_book'])
+async def return_book(id: int, book_id: int, token: dict = Depends(is_creator_or_admin)):
+    resp = await AsyncRequests.return_book(id, book_id)
+    return resp

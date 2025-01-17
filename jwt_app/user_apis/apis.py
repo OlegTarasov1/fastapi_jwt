@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from user_apis.jwt import create_access_token, decoding_jwt, is_creator
+from fastapi import APIRouter, HTTPException, Depends, status, Query
+from user_apis.jwt import create_access_token, is_creator_or_admin, is_admin
 from pydantic import BaseModel
 from .requests import AsyncRequests
 from dotenv import load_dotenv
@@ -35,7 +35,7 @@ async def get_user(id: int):
 
 
 @user_api_router.delete('/api/v1/del_user/{id}/', tags=['users'])
-async def del_user(id: int, token: dict = Depends(is_creator)):
+async def del_user(id: int, token: dict = Depends(is_creator_or_admin)):
     is_deleted = await AsyncRequests.del_user(id)
     print(is_deleted)
     if is_deleted:
@@ -58,9 +58,15 @@ class UserPatch(BaseModel):
     username: str
 
 @user_api_router.patch('/api/v1/patch_user/{id}/', tags = ['users'])
-async def patch_user(id: int, new_user: UserPatch, token: dict = Depends(is_creator)):
+async def patch_user(id: int, new_user: UserPatch, token: dict = Depends(is_creator_or_admin)):
     try:
         obj = await AsyncRequests.patch_user(id, new_user.dict())
         return obj
     except:
         raise HTTPException(status_code=403)
+    
+
+@user_api_router.get('/api/v1/list_readers/', tags = ['users'])
+async def list_readers(limit: int = Query(10), offset: int = Query(0), token: int = Depends(is_admin)):
+    resp = await AsyncRequests.get_list(limit, offset)
+    return resp

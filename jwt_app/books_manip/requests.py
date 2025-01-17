@@ -20,6 +20,7 @@ class AsyncRequests:
             stmt = select(Books).where(
                 Books.title == book['title'],
                 Books.description == book['description'],
+                Books.genres == book['genres'],
                 Books.date == book['date'],
                 Books.in_store == book['in_store']
             ).options(selectinload(Books.authors))

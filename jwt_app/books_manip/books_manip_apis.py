@@ -10,6 +10,7 @@ class BookToAdd(BaseModel):
     title: str
     description: str
     date: datetime.date
+    genres: list[str]
     authors: list[int]
     in_store: int
 

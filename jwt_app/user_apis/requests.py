@@ -1,6 +1,6 @@
 from bd.base import async_session
 from bd.reader_models import Reader
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, asc
 import bcrypt
 
 
@@ -70,3 +70,23 @@ class AsyncRequests:
                 'id': id,
                 **new_user
             }
+        
+
+    @staticmethod
+    async def get_list(limit: int, offset: int):
+        async with async_session() as session:
+            stmt = select(Reader).order_by(asc(Reader.id)).limit(limit).offset(offset * limit)
+            result = await session.execute(stmt)
+            result = result.scalars().all()
+
+            resp = []
+            for i in result:
+                data = {
+                    'id': i.id,
+                    'username': i.username,
+                    'is_admin': i.is_admin
+                }
+                resp.append(data)
+
+            return resp
+        

@@ -37,9 +37,17 @@ async def decoding_jwt(token: str = Header('authorization')):
 
 
 
-async def is_creator(id: int, token: str = Header('authorization')):
+async def is_creator_or_admin(id: int, token: str = Header('authorization')):
     token_dict = await decoding_jwt(token)
     if id == token_dict.get('id') or token_dict.get('role'):
         return token_dict
     else:
         raise HTTPException(status_code=401)
+
+
+async def is_admin(token: str = Header('authorization')):
+    token_dict = await decoding_jwt(token)
+    if token_dict['role']:
+        return 1
+    else:
+        raise HTTPException(status_code=403)

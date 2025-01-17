@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from authors_manip.requests import AsyncRequests
 from pydantic import BaseModel
 from datetime import date
-from user_apis.jwt import decoding_jwt, is_creator
+from user_apis.jwt import decoding_jwt, is_creator_or_admin, is_admin
 
 authors_router = APIRouter()
 
@@ -15,7 +15,7 @@ class AuthorToAdd(BaseModel):
 
 
 @authors_router.post('/api/v1/add_author/', tags = ['auhtors'])
-async def add_auhtor(author: AuthorToAdd, token: dict = Depends(decoding_jwt)):
+async def add_auhtor(author: AuthorToAdd, token: dict = Depends(is_admin)):
     res = await AsyncRequests.add_author(author.dict(exclude_none = True))
     if res:
         return res
@@ -33,7 +33,7 @@ async def get_author(id: int):
 
 
 @authors_router.delete('/api/v1/del_auhtor/{id}', tags=['auhtors'])
-async def del_author(id: int, token: dict = Depends(decoding_jwt)):
+async def del_author(id: int, token: dict = Depends(is_admin)):
     res = await AsyncRequests.del_author(id)
     if res:
         return 'Author has been deleted successfully!'
@@ -48,7 +48,7 @@ class AuthorToPatch(BaseModel):
 
 
 @authors_router.patch('/api/v1/patch_author/{id}', tags = ['auhtors'])
-async def update_author(author: AuthorToPatch, id: int, token: dict = Depends(is_creator)):
+async def update_author(author: AuthorToPatch, id: int, token: dict = Depends(is_creator_or_admin)):
     print('works')
     res = await AsyncRequests.patch_author(author.dict(exclude_none = True), id)
     print(res)

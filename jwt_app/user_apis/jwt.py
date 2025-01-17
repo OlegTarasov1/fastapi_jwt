@@ -37,7 +37,7 @@ async def decoding_jwt(token: str = Header('authorization')):
 
 
 
-async def is_creator_or_admin(id: int, token: str = Header('authorization')):
+async def is_creator_or_admin(id: int, token: str = Header('authorization'), *args, **kwargs):
     token_dict = await decoding_jwt(token)
     if id == token_dict.get('id') or token_dict.get('role'):
         return token_dict

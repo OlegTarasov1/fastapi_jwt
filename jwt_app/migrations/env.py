@@ -8,7 +8,7 @@ from alembic import context
 import os
 from dotenv import load_dotenv
 import bd.models
-import bd.reader_models
+# import bd.reader_models
 from bd.base import Base
 
 load_dotenv()

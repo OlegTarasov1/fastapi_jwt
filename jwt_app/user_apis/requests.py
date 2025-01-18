@@ -1,5 +1,5 @@
 from bd.base import async_session
-from bd.reader_models import Reader
+from bd.models import Reader
 from sqlalchemy import select, delete, update, asc
 import bcrypt
 

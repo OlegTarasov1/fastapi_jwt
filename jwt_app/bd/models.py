@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy import ForeignKey, String, Integer, Column, Table
+from sqlalchemy import ForeignKey, String, Column, Table, Date
 from typing import Annotated
 import datetime
 from .base import Base
@@ -18,7 +18,19 @@ class Books(Base):
     authors: Mapped[list['Authors']] = relationship(secondary = 'auth_books_table', back_populates = 'books')
     genres: Mapped[list[str]] = mapped_column(ARRAY(String))
     in_store: Mapped[int] = mapped_column(default = 0)
+    
+    readers: Mapped[list['Reader']] = relationship(secondary = 'book_to_reader')
 
+
+class Reader(Base):
+    __tablename__ = 'readers'
+
+    id: Mapped[int] = mapped_column(primary_key = True) 
+    username: Mapped[str] = mapped_column(unique = True)
+    password: Mapped[bytes]
+    is_admin: Mapped[bool] = mapped_column(server_default = 'FALSE')
+    
+    books: Mapped[list['Books']] = relationship(secondary = 'book_to_reader')
 
 
 class Authors(Base):
@@ -38,3 +50,12 @@ auth_books_table = Table(
     Column('author_id', ForeignKey('authors.id'), primary_key = True)
 )
 
+
+book_to_reader = Table(
+    'book_to_reader',
+    Base.metadata,
+    Column('book_id', ForeignKey('books.id'), primary_key = True),
+    Column('reader_id', ForeignKey('readers.id'), primary_key = True),
+    Column('borrowed_book', Date, default = datetime.datetime.utcnow),
+    Column('expected_return_date', Date)
+)

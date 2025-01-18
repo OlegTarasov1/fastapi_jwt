@@ -19,7 +19,7 @@ class Books(Base):
     genres: Mapped[list[str]] = mapped_column(ARRAY(String))
     in_store: Mapped[int] = mapped_column(default = 0)
     
-    readers: Mapped[list['Reader']] = relationship(secondary = 'book_to_reader')
+    readers: Mapped[list['Reader']] = relationship(secondary = 'book_to_reader', back_populates = 'books')
 
 
 class Reader(Base):
@@ -30,7 +30,7 @@ class Reader(Base):
     password: Mapped[bytes]
     is_admin: Mapped[bool] = mapped_column(server_default = 'FALSE')
     
-    books: Mapped[list['Books']] = relationship(secondary = 'book_to_reader')
+    books: Mapped[list['Books']] = relationship(secondary = 'book_to_reader', back_populates = 'readers')
 
 
 class Authors(Base):
@@ -56,6 +56,6 @@ book_to_reader = Table(
     Base.metadata,
     Column('book_id', ForeignKey('books.id'), primary_key = True),
     Column('reader_id', ForeignKey('readers.id'), primary_key = True),
-    Column('borrowed_book', Date, default = datetime.datetime.utcnow),
-    Column('expected_return_date', Date)
+    Column('borrowed_book', Date, nullable = True, default = datetime.datetime.utcnow),
+    Column('expected_return_date', Date, nullable = True)
 )

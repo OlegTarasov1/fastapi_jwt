@@ -28,10 +28,7 @@ async def add_user(reader: User):
 @user_api_router.get('/api/v1/get_user/{id}/', tags=['users'])
 async def get_user(id: int):
     user_data = await AsyncRequests.get_user_data(id) 
-    if user_data:
-        return {'id': id, 'username': user_data.username, 'is_admin': user_data.is_admin}
-    else:
-        raise HTTPException(status_code = 400, detail = 'no such user was found')
+    return user_data
 
 
 @user_api_router.delete('/api/v1/del_user/{id}/', tags=['users'])

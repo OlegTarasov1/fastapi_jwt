@@ -1,5 +1,6 @@
 from bd.base import async_session
-from bd.models import Reader
+from fastapi import HTTPException
+from bd.models import Reader, book_to_reader, Books
 from sqlalchemy import select, delete, update, asc
 import bcrypt
 
@@ -27,12 +28,32 @@ class AsyncRequests:
 
 
     @staticmethod
-    async def get_user_data(id: int) -> object:
+    async def get_user_data(id: int):
         async with async_session() as session:
-            stmt = select(Reader).where(Reader.id == id)
-            run = await session.execute(stmt)
-            return run.scalars().first()
+            stmt = (
+                select(
+                    book_to_reader,
+                    Books,
+                    Reader.id,
+                    Reader.username,
+                    Reader.is_admin                    
+                )
+                .join(Reader, book_to_reader.c.reader_id == Reader.id)
+                .join(Books, book_to_reader.c.book_id == Books.id)
+                .where(
+                    book_to_reader.c.reader_id == id
+                )
+            )
         
+            try:
+                run = await session.execute(stmt)
+            except:
+                raise HTTPException(status_code=400, detail = 'no such user')
+                
+            run = run.mappings().all()
+            return run
+        
+
     @staticmethod
     async def del_user(id: int) -> bool:
         async with async_session() as session:
@@ -68,7 +89,8 @@ class AsyncRequests:
             await session.commit()
             return {
                 'id': id,
-                **new_user
+                **new_user,
+                'is_admin': False
             }
         
 

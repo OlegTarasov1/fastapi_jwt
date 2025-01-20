@@ -2,8 +2,7 @@ from bd.base import async_session
 from fastapi import HTTPException
 from bd.models import Reader
 from bd.models import Books
-from sqlalchemy.orm import joinedload, selectinload, aliased
-from sqlalchemy import update, select, insert, delete
+from sqlalchemy import select, insert, delete
 import datetime
 from bd.models import book_to_reader
 
@@ -13,7 +12,17 @@ class AsyncRequests:
     async def add_book(user_id: int, book_id: int, expected_return: datetime.date = None):
         async with async_session() as session:
 
-            # stmt = select(Reader).where(Reader.id == user_id).options(joinedload(Reader.books))
+            stmt = (select(book_to_reader)
+                .where(book_to_reader.c.reader_id == user_id)
+            )
+            try:
+                reader_data = await session.execute(stmt)
+                print(len(reader_data))
+                if len(reader_data) > 5:
+                    raise HTTPException(status_code = 400, detail = 'the user has too manu books prescribed')
+            except:
+                pass
+
             stmt = select(Books).where(Books.id == book_id)
             try:
                 book_obj = await session.execute(stmt)
@@ -21,10 +30,12 @@ class AsyncRequests:
             except:
                 raise HTTPException(status_code=400, detail = 'no such book')
 
+
             if not book_obj or not book_obj.in_store > 0:
-                raise HTTPException(status_code = 400)
+                raise HTTPException(status_code = 400, detail= 'books are not in store')
             else:
                 book_obj.in_store -= 1
+
 
             stmt = insert(book_to_reader).values(
                 reader_id = user_id,
@@ -36,11 +47,24 @@ class AsyncRequests:
                 await session.execute(stmt)
             except:
                 await session.rollback()
-                raise HTTPException(status_code = 400, detail = 'incorrect values were passed')
-            
+                raise HTTPException(status_code = 400)
+   
             await session.commit()
 
-            return 'success'
+            stmt = (
+                select(book_to_reader, Books, Reader)
+                .join(Books, book_to_reader.c.book_id == Books.id)
+                .join(Reader, book_to_reader.c.reader_id == Reader.id)
+                .where(
+                    book_to_reader.c.reader_id == user_id,
+                    book_to_reader.c.book_id == book_id
+                )
+            )
+            
+            resp = await session.execute(stmt)
+            resp = resp.mappings().all()
+            del resp[0]['Reader'].password
+            return resp
 
 
     @staticmethod
@@ -63,82 +87,21 @@ class AsyncRequests:
                     raise HTTPException(400, detail = 'nothing to remove')
             except:
                 await session.rollback()
-                raise HTTPException(status_code = 400, detail = 'something went wrong')
+                raise HTTPException(status_code = 400, detail = 'there\'s nothing to remove')
 
             for_removal.in_store += 1
             await session.commit()
+
+            stmt = (
+                select(book_to_reader, Books, Reader)
+                .join(Books, book_to_reader.c.book_id == Books.id)
+                .join(Reader, book_to_reader.c.reader_id == Reader.id)
+                .where(book_to_reader.c.reader_id == user_id)
+            )
             
-            return 'removed successfully!'
-
-
-
-            
-
-
-
-
-
-
-# class AsyncRequests:
-#     @staticmethod
-#     async def add_book(user_id: int, book_id: int) -> dict:
-#         async with async_session() as session:
-
-#             stmt = select(Books).where(Books.id == book_id)
-#             result = await session.execute(stmt)
-#             book = result.scalar_one_or_none()
-#             if not book:
-#                 raise HTTPException(status_code=400, detail="Book not found")
-#             if book.in_store <= 0:
-#                 raise HTTPException(status_code=400, detail="No books available in store")
-
-#             stmt = select(Reader).where(Reader.id == user_id).options(joinedload(Reader.books))
-#             result = await session.execute(stmt)
-#             reader = result.scalar_one_or_none()
-#             if not reader:
-#                 raise HTTPException(status_code=400, detail="Reader not found")
-            
-#             if len(reader.books) >= 5:
-#                 raise HTTPException(status_code=400, detail="Too many books assigned to this reader")
-                
-#             book.in_store -= 1
-#             reader.books.append(book)
-#             await session.commit()
-#             return {
-#                 'id': reader.id,
-#                 'username': reader.username,
-#                 'books': [{'id': b.id, 'title': b.title} for b in reader.books],  # Преобразуем книги в словари
-#                 'is_admin': reader.is_admin,
-#             }
-        
-
-#     @staticmethod
-#     async def return_book(user_id: int, book_id: int) -> dict:
-#         async with async_session() as session:
-
-#             stmt = select(Books).where(Books.id == book_id)
-#             result = await session.execute(stmt)
-#             book = result.scalar_one_or_none()
-#             if not book:
-#                 raise HTTPException(status_code=400, detail="Book not found")
-
-#             stmt = select(Reader).where(Reader.id == user_id).options(joinedload(Reader.books))
-#             result = await session.execute(stmt)
-#             reader = result.scalar_one_or_none()
-#             if not reader:
-#                 raise HTTPException(status_code=400, detail="Reader not found")
-
-#             if book not in reader.books:
-#                 raise HTTPException(status_code=400, detail="Book is not assigned to this reader")
-#             reader.books.remove(book)
-#             book.in_store += 1
-
-#             await session.commit()
-#             return {
-#                 'id': reader.id,
-#                 'username': reader.username,
-#                 'books': [b.id for b in reader.books],
-#                 'is_admin': reader.is_admin
-#             }
-
+            resp = await session.execute(stmt)
+            resp = resp.mappings().all()
+            if resp:
+                del resp[0]['Reader'].password
+            return resp
 

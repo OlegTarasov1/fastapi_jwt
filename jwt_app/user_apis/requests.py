@@ -1,7 +1,7 @@
 from bd.base import async_session
 from fastapi import HTTPException
 from bd.models import Reader, book_to_reader, Books
-from sqlalchemy import select, delete, update, asc
+from sqlalchemy import select, delete, update, asc, func, label
 import bcrypt
 
 
@@ -97,18 +97,32 @@ class AsyncRequests:
     @staticmethod
     async def get_list(limit: int, offset: int):
         async with async_session() as session:
-            stmt = select(Reader).order_by(asc(Reader.id)).limit(limit).offset(offset * limit)
-            result = await session.execute(stmt)
-            result = result.scalars().all()
+            
+            stmt = (
+                select(
+                    Reader.id,
+                    Reader.username,
+                    Reader.is_admin,
+                    func.count(book_to_reader.c.reader_id)
+                        .label('books_prescribed')
+                )
+                .join(
+                    book_to_reader,
+                    book_to_reader.c.reader_id == Reader.id,
+                    isouter = True
+                )
+                .order_by(asc(Reader.id))
+                .group_by(
+                    Reader.id,
+                    Reader.username,
+                    Reader.is_admin
+                )
+                .limit(limit)
+                .offset(offset * limit)
+            )
 
-            resp = []
-            for i in result:
-                data = {
-                    'id': i.id,
-                    'username': i.username,
-                    'is_admin': i.is_admin
-                }
-                resp.append(data)
+            result = await session.execute(stmt)
+            resp = result.mappings().all()
 
             return resp
         

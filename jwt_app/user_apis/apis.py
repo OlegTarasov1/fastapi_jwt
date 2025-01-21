@@ -64,6 +64,9 @@ async def patch_user(id: int, new_user: UserPatch, token: dict = Depends(is_crea
     
 
 @user_api_router.get('/api/v1/list_readers/', tags = ['users'])
-async def list_readers(limit: int = Query(10), offset: int = Query(0), token: int = Depends(is_admin)):
+async def list_readers(limit: int = Query(10), offset: int = Query(0)):
     resp = await AsyncRequests.get_list(limit, offset)
-    return resp
+    if resp:
+        return resp
+    else:
+        raise HTTPException(status_code=400, detail = 'no data was foubnd')
